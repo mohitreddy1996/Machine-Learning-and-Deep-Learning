@@ -32,12 +32,19 @@ def svm_loss_naive(W, X, y, reg):
       if j == y[i]:
         continue
       margin = scores[j] - correct_class_score + 1 # note delta = 1
+      # loss function for svm : max(0, wx(j) - wx(y) + delta); for all j!=y.
       if margin > 0:
         loss += margin
+        dW[:, j] += X[i]
+        dW[:, y[i]] -= X[i]
 
   # Right now the loss is a sum over all training examples, but we want it
   # to be an average instead so we divide by num_train.
   loss /= num_train
+
+  # average of the gradient.
+  dW /= num_train
+  dW += reg*W
 
   # Add regularization to the loss.
   loss += 0.5 * reg * np.sum(W * W)
@@ -69,12 +76,30 @@ def svm_loss_vectorized(W, X, y, reg):
   # Implement a vectorized version of the structured SVM loss, storing the    #
   # result in loss.                                                           #
   #############################################################################
-  pass
+  # get all the dimensions : 
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+  scores = X.dot(W)
+  scores = scores.T
+
+  correct_scores = scores[y, np.arange(num_train)]
+
+  mat = scores - correct_scores + 1
+  mat[y, np.arange(num_train)] = 0
+
+  threshold = np.maximum(np.zeros((num_classes, num_train)), mat)
+
+
+  # calculate loss.
+  loss = np.sum(threshold)
+  loss /= num_train
+
+  # regularized loss
+  loss += 0.5*reg*np.sum(W*W)
+
   #############################################################################
   #                             END OF YOUR CODE                              #
-  #############################################################################
-
-
+  ############################################################################
   #############################################################################
   # TODO:                                                                     #
   # Implement a vectorized version of the gradient for the structured SVM     #
@@ -84,7 +109,21 @@ def svm_loss_vectorized(W, X, y, reg):
   # to reuse some of the intermediate values that you used to compute the     #
   # loss.                                                                     #
   #############################################################################
-  pass
+  choice = threshold
+  choice[threshold > 0] = 1
+
+  column_sum = np.sum(choice, axis = 0)
+  choice[y, range(num_train)] = -column_sum[range(num_train)]
+
+  # print "Size of choice : %s and X: %s" %(choice.shape, X.shape)
+  dW = np.dot(X.T, choice.T)
+
+  dW /=num_train
+
+  # print dW.shape
+  # print W.shape
+
+  dW += reg*W
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
