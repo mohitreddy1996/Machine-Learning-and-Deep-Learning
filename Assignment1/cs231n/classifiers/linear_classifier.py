@@ -91,11 +91,14 @@ class LinearClassifier(object):
       class.
     """
     y_pred = np.zeros(X.shape[1])
+    # print "Shape X : %s, W : %s" %(X.shape, self.W.shape)
     ###########################################################################
     # TODO:                                                                   #
     # Implement this method. Store the predicted labels in y_pred.            #
     ###########################################################################
-    y_pred = np.argmax(np.dot(X, self.W), axis = 0)
+    y_pred = np.argmax(np.dot(X, self.W), axis = 1)
+    # print "Shape y : %s" %(y_pred.shape)
+    # print y_pred
     ###########################################################################
     #                           END OF YOUR CODE                              #
     ###########################################################################
