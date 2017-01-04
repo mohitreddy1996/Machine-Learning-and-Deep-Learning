@@ -97,9 +97,15 @@ class TwoLayerNet(object):
     # regularization loss by 0.5                                                #
     #############################################################################
     # softmax loss expression. -log(e^fyi/sum(e^fj))
-    temp_sum = -np.log(np.exp(scores[range(len(y)), y])/ np.sum(np.exp(scores), axis=1))
+    # temp_sum = -np.log(np.exp(scores[range(len(y)), y])/ np.sum(np.exp(scores), axis=1))
     # loss function and regularization term.
-    loss = np.sum(temp_sum)/len(y) + reg*0.5*(np.sum(W1*W1) + np.sum(W2*W2))
+    # loss = np.sum(temp_sum)/len(y) + reg*0.5*(np.sum(W1*W1) + np.sum(W2*W2))
+    
+    # referred..
+    rows = np.sum(np.exp(scores), axis=1)
+    layer4 = np.sum(-scores[range(N), y] + np.log(rows))/N
+
+    loss = layer4 + 0.5*reg*(np.sum(W1*W1) + np.sum(W2*W2))
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -121,7 +127,7 @@ class TwoLayerNet(object):
     grads['W2'] += reg*W2
     grads['b2'] = np.sum(norm_score, axis = 0)
 
-    temp_grad = np.dot(dscores, W2.T)
+    temp_grad = np.dot(norm_score, W2.T)
     temp_grad[layer1 <= 0] = 0
 
     grads['W1'] = np.dot(X.T, temp_grad)
@@ -174,7 +180,7 @@ class TwoLayerNet(object):
       np.random.shuffle(shuffle_indices)
       shuffle_indices = shuffle_indices[0: batch_size-1]
       X_batch = X[shuffle_indices,:]
-      y_batch = Y[shuffle_indices]
+      y_batch = y[shuffle_indices]
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
