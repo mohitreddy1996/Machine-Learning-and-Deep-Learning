@@ -353,15 +353,27 @@ def conv_forward_naive(x, w, b, conv_param):
     W' = 1 + (W + 2 * pad - WW) / stride
   - cache: (x, w, b, conv_param)
   """
-  out = None
-  #############################################################################
-  # TODO: Implement the convolutional forward pass.                           #
-  # Hint: you can use the function np.pad for padding.                        #
-  #############################################################################
-  pass
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
+  pad = conv_param['pad']
+  stride = conv_param['stride']
+  F, C, HH, WW = w.shape
+  N, C, H, W = x.shape
+  Hp = 1 + (H + 2*pad - HH)/ stride
+  Wp = 1 + (W + 2*pad - WW)/stride
+
+  out = np.zeros((N, F, Hp, Wp))
+  padded = np.pad(x, [(0, 0), (0, 0), (pad, pad), (pad, pad)], 'constant')
+
+  for i in xrange(N):
+    for j in xrange(F):
+      for k in xrange(Hp):
+        hs = k*stride
+        for l in xrange(Wp):
+          ws = l*stride
+          # applying the jth filter. get the area on which the filter has to be obtained.
+          window = padded[i, :, hs: hs+HH, ws: ws+WW]
+          # convolve.
+          out[i, j, k, l] = np.sum(window*w[j]) + b[j]
+
   cache = (x, w, b, conv_param)
   return out, cache
 
@@ -379,14 +391,33 @@ def conv_backward_naive(dout, cache):
   - dw: Gradient with respect to w
   - db: Gradient with respect to b
   """
-  dx, dw, db = None, None, None
-  #############################################################################
-  # TODO: Implement the convolutional backward pass.                          #
-  #############################################################################
-  pass
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
+  x, w, b, conv_param = cache
+  pad = conv_param['pad']
+  stride = conv_param['stride']
+  F, C, HH, WW = w.shape
+  N, C, H, W = x.shape
+  Hp = 1 + (H + 2*pad - HH)/stride
+  Wp = 1 + (W + 2*pad - WW)/stride
+
+  dx = np.zeros_like(x)
+  dy = np.zeros_like(w)
+  db = np.zeros_like(b)
+
+  padded = np.pad(x, [(0, 0), (0, 0), (pad, pad), (pad, pad)], 'constant')
+  padded_dx = np.pad(dx, [(0, 0), (0, 0), (pad, pad), (pad, pad)], 'constant')
+
+  for i in xrange(N):
+    for j in xrange(F):
+      for k in xrange(Hp):
+        hs = k*stride
+        for l in xrange(Wp):
+          ws = l*stride
+          # applying the jth filter. get the area on which the filter has to be obtained.
+          window = padded[i, L, hs: hs+HH, ws: ws+WW]
+          db[j] += dout[i, j, k, l]
+          dw[j] = window*dout[i, j, k, l]
+          padded_dx[i, :, hs:hs+HH, ws:ws+WW] += w[j]*dout[i, j, k, l]
+  dx = padded_dx[:, :, pad:pad+H, pad:pad+W]
   return dx, dw, db
 
 
@@ -405,14 +436,25 @@ def max_pool_forward_naive(x, pool_param):
   - out: Output data
   - cache: (x, pool_param)
   """
-  out = None
-  #############################################################################
-  # TODO: Implement the max pooling forward pass                              #
-  #############################################################################
-  pass
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
+  HH = pool_param['pool_height']
+  WW = pool_param['pool_width']
+  stride = pool_width['stride']
+
+  N, C, H, W = x.shape
+  Hp = 1 + (H - HH)/stride
+  Wp = 1 + (W - WW)/stride
+
+  out = np.zeros((N, C, Hp, Wp))
+
+  for i in xrange(N):
+    for j in xrange(C):
+      for k in xrange(Hp):
+        hs = k*stride
+        for l in xrange(Wp):
+          ws = l*stride
+          window = x[i, j, hs:hs+HH, ws:ws+WW]
+          out[i, j, k, l] = np.max(window)
+
   cache = (x, pool_param)
   return out, cache
 
@@ -428,14 +470,29 @@ def max_pool_backward_naive(dout, cache):
   Returns:
   - dx: Gradient with respect to x
   """
-  dx = None
-  #############################################################################
-  # TODO: Implement the max pooling backward pass                             #
-  #############################################################################
-  pass
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
+  x, pool_param = cache
+  HH = pool_param['pool_height']
+  WW = pool_param['pool_width']
+  stride = pool_param['stride']
+  N, C, H, W = x.shape
+  Hp = 1 + (H - HH)/stride
+  Wp = 1 + (W - WW)/stride
+
+  dx = np.zeros_like(x)
+
+  for i in xrange(N):
+    for j in xrange(C):
+      for k in xrange(Hp):
+        hs = k*stride
+        for l in xrange(Wp):
+          ws = l*stride
+
+          window = x[i, j, hs:hs+HH, ws: ws+WW]
+          m = np.max(window)
+
+          dx[i, j, hs:hs+HH, ws:ws+WW] += (window == m) *dout[i, j, k, l]
+          
+
   return dx
 
 
